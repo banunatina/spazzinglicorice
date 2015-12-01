@@ -237,12 +237,9 @@ input[type=range][orient=vertical]
     padding: 0 5px;
 }
 
-/**** CLAP CLAP ****/
-#clap {
-  position: relative;
-  height: 20px;
-  top: -5px;
-}
+/*============================/
+==== REACTIONS STYLING =======
+=============================*/
 
 .speech-container {
   display: inline-block;
@@ -277,4 +274,206 @@ input[type=range][orient=vertical]
   margin-left: -.4em;
   -webkit-transform: rotate(-35deg);
 }
->>>>>>> (feat) Implement remote clapping.
+
+section {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+}
+
+.btn-triger {
+  z-index: 600;
+}
+.btn-float {
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  display: inline-block;
+  border: none;
+  font-size: 18px;
+  color: #fff;
+  text-align: center;
+  position: relative;
+  -webkit-transition: 0.1s;
+  transition: 0.1s;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.11);
+  z-index: 600;
+}
+.btn-float:hover {
+  text-decoration: none;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15), 0 4px 15px rgba(0, 0, 0, 0.13);
+}
+.btn-float:active, .btn-float:focus {
+  outline: none;
+}
+.btn-float + .btn-float {
+  margin-left: 5px;
+}
+
+.yellow {
+  background: #ffa000;
+}
+
+.blue {
+  background: #40c4ff;
+}
+
+.green {
+  background: #00e676;
+}
+
+.purple {
+  background: #8e24aa;
+}
+
+.pink {
+  background: #e91e63;
+}
+
+.icon-bars {
+  background: #fff;
+  height: 1px;
+  width: 22px;
+  margin: auto;
+  display: block;
+  position: relative;
+  -moz-transition: 0.1s 0.1s;
+  -o-transition: 0.1s 0.1s;
+  -webkit-transition: 0.1s;
+  -webkit-transition-delay: 0.1s;
+  -webkit-transition: 0.1s 0.1s;
+          transition: 0.1s 0.1s;
+}
+.icon-bars:after {
+  content: '';
+  position: absolute;
+  height: 22px;
+  width: 1px;
+  background: #fff;
+  top: -10px;
+}
+
+.float-btn-group {
+  position: relative;
+  float: right;
+  -webkit-transition: 0.1s;
+  transition: 0.1s;
+}
+.float-btn-group .btn-triger {
+  z-index: 15;
+  float: left;
+}
+.float-btn-group.open .btn-triger {
+  -ms-transform: scale(0.8, 0.8);
+  -webkit-transform: scale(0.8, 0.8);
+  transform: scale(0.8, 0.8);
+}
+
+.float-btn-group .btn-list {
+  position: absolute;
+  right: 0;
+  -webkit-transition: 0.1s;
+  transition: 0.1s;
+}
+.float-btn-group .btn-list li {
+  display: inline-block;
+}
+.float-btn-group.open .icon-bars {
+  -ms-transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+
+.model-6 .float-btn-group {
+  float: none;
+  margin: auto;
+  width: 50px;
+}
+.model-6 .float-btn-group .icon-bars {
+  -moz-transition: 0.1s 0.6s;
+  -o-transition: 0.1s 0.6s;
+  -webkit-transition: 0.1s;
+  -webkit-transition-delay: 0.6s;
+  -webkit-transition: 0.1s 0.6s;
+          transition: 0.1s 0.6s;
+}
+.model-6 .float-btn-group .btn-list {
+  width: 50px;
+  height: 50px;
+  left: 0;
+  top: 0;
+}
+.model-6 .float-btn-group .btn-list .btn-float {
+  position: absolute;
+  -ms-transform: scale(0, 0);
+  -webkit-transform: scale(0, 0);
+  transform: scale(0, 0);
+  left: 0;
+  top: 0;
+  margin: auto;
+}
+.model-6 .float-btn-group .btn-list .btn-float:nth-child(1) {
+  -moz-transition: 0.1s 0.1s;
+  -o-transition: 0.1s 0.1s;
+  -webkit-transition: 0.1s;
+  -webkit-transition-delay: 0.1s;
+  -webkit-transition: 0.1s 0.1s;
+          transition: 0.1s 0.1s;
+}
+.model-6 .float-btn-group .btn-list .btn-float:nth-child(2) {
+  -moz-transition: 0.1s 0.3s;
+  -o-transition: 0.1s 0.3s;
+  -webkit-transition: 0.1s;
+  -webkit-transition-delay: 0.3s;
+  -webkit-transition: 0.1s 0.3s;
+          transition: 0.1s 0.3s;
+}
+.model-6 .float-btn-group .btn-list .btn-float:nth-child(3) {
+  -moz-transition: 0.1s 0.5s;
+  -o-transition: 0.1s 0.5s;
+  -webkit-transition: 0.1s;
+  -webkit-transition-delay: 0.5s;
+  -webkit-transition: 0.1s 0.5s;
+          transition: 0.1s 0.5s;
+}
+.model-6 .float-btn-group .btn-list .btn-float:nth-child(4) {
+  -moz-transition: 0.1s 0.7s;
+  -o-transition: 0.1s 0.7s;
+  -webkit-transition: 0.1s;
+  -webkit-transition-delay: 0.7s;
+  -webkit-transition: 0.1s 0.7s;
+          transition: 0.1s 0.7s;
+}
+.model-6 .float-btn-group.open .icon-bars {
+  -webkit-transition: 0.1s;
+  transition: 0.1s;
+}
+.model-6 .float-btn-group.open .btn-list .btn-float {
+  -ms-transform: scale(0.9, 0.9);
+  -webkit-transform: scale(0.9, 0.9);
+  transform: scale(0.9, 0.9);
+}
+.model-6 .float-btn-group.open .btn-list .btn-float:nth-child(1) {
+  left: -75px;
+  top: 0px;
+}
+.model-6 .float-btn-group.open .btn-list .btn-float:nth-child(2) {
+  left: -40px;
+  top: -65px;
+}
+.model-6 .float-btn-group.open .btn-list .btn-float:nth-child(3) {
+  left: 40px;
+  top: -65px;
+}
+.model-6 .float-btn-group.open .btn-list .btn-float:nth-child(4) {
+  left: 75px;
+  top: 0px;
+}
+.model-6 .float-btn-group.open .btn-list .btn-float:hover {
+  -webkit-transition: 0.1s;
+  transition: 0.3s;
+  text-shadow: 1px 4px 1px #666;
+}
