@@ -162,7 +162,52 @@ angular.module('snapcast.webrtc', [])
             }
         });
         
+        var clapButton = angular.element($('#clap'));
 
+        clapButton.on('click', function() {
+          var video = $('#localVideo');
+          var rect = video[0].getBoundingClientRect();
+          var bodyRect = video.parent()[0].getBoundingClientRect();
+          var yOffset   = rect.top - bodyRect.top;
+          var xOffset   = rect.right - bodyRect.right;
+          console.log(bodyRect);
+          var bubble = $('<div class="speech-container"><span class="speech-bubble"><img src="http://i.imgur.com/XbBW0gA.png"></span></div>').css({
+            position: 'absolute',
+            top: 0 - yOffset*2,
+            right: bodyRect.right + bodyRect.right/3,
+            'z-index': 300
+          });
+          var id = webrtc.connection.connection.id;
+      
+          socket.emit('clap', id);
+          video.parent().prepend(bubble);
+          var remove = function() {
+            video.parent().children("div:first").remove();
+          };
+          setTimeout(remove, 3000);
+        });
+
+        socket.on('clap', function(peer) {
+           var video = $('#'+ peer + '_video_incoming');
+           var rect = video[0].getBoundingClientRect();
+           var bodyRect = video.parent()[0].getBoundingClientRect();
+           var yOffset   = rect.top - bodyRect.top;
+           var xOffset   = rect.right - bodyRect.right;
+           var bubble = $('<div class="speech-container"><span class="speech-bubble"><img src="http://i.imgur.com/XbBW0gA.png"></span></div>').css({
+             position: 'absolute',
+             top: 0 - yOffset*2,
+             // right: rect.right,
+             left: rect.left + rect.left/4,
+             'z-index': 300
+        });
+           console.log(rect, bodyRect);
+
+           video.parent().prepend(bubble);
+           var remove = function() {
+             video.parent().children("div:first").remove();
+           };
+           setTimeout(remove, 3000);
+         });
       }
     };
 });

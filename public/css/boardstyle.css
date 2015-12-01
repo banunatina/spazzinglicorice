@@ -236,3 +236,44 @@ input[type=range][orient=vertical]
     height: 175px;
     padding: 0 5px;
 }
+
+/**** CLAP CLAP ****/
+#clap {
+  position: relative;
+  height: 20px;
+  top: -5px;
+}
+
+.speech-container {
+  display: inline-block;
+}
+
+.speech-bubble {
+  background: #30253D;
+  border-radius: 100%;
+  color: #fff;
+  display: inline-block;
+  padding: .5em .8em;
+  position: relative;
+  z-index: 300;
+}
+.speech-bubble:before {
+  background: #30253D;
+  border-radius: 100%;
+  content: '';
+  width: 1.5em; height: .5em;
+  position: absolute; left: 50%; bottom: -2px;
+  margin-left: -.5em;
+  -webkit-transform: rotate(-45deg);
+}
+.speech-bubble:after {
+  background: #000;
+  border-radius:0%;
+  content: '';
+  width: .4em; height: .2em;
+  position: absolute; bottom: -4px;
+  left: 45%;
+  margin-left: -.4em;
+  -webkit-transform: rotate(-35deg);
+}
+>>>>>>> (feat) Implement remote clapping.
