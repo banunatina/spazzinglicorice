@@ -2,14 +2,22 @@
 
 // ##### [Back to Table of Contents](./tableofcontents.html)
 
-// Initialize the whiteboard module.
+/*===================================
+===== CANVAS/DRAWING DIRECTIVES =====
+====================================*/
 
-// Angular directive altered from pwambach's Angular-Canvas-Painter: 
-// https://github.com/pwambach/angular-canvas-painter
+/*
+Angular directive altered and repurposed 
+from pwambach's Angular-Canvas-Painter: 
+https://github.com/pwambach/angular-canvas-painter
+*/
 
 angular.module('snapcast.whiteboard', [])
-  // Set App to the root scope. 
-// Directive for color selection
+
+/*===================================
+===== COLORPICKER DIRECTIVE =====
+====================================*/
+
   .directive('kiColorSelector', function () {
     return {
       restrict: 'AE',
@@ -19,14 +27,17 @@ angular.module('snapcast.whiteboard', [])
       },
       templateUrl: '../templates/color-selector.html',
       link: function(scope){
+        // sets color on scope to the color chosen
         scope.setColor = function(col){
-          console.log('color selected');
           scope.selectedColor = col;
         };
       }
     };
   })
-// Directive for the drawing functionality
+
+/*===================================
+======== DRAWING DIRECTIVES =========
+====================================*/
   .directive('kiCanvas', function($window, socket) {
     return {
       restrict: 'AE',
@@ -36,15 +47,21 @@ angular.module('snapcast.whiteboard', [])
       },
       templateUrl: '../templates/canvas.html',
       link: function postLink(scope, elm) {
-
+        
+        // Detects if touch or mouse for events
         var isTouch = !!('ontouchstart' in window);
 
         var PAINT_START = isTouch ? 'touchstart' : 'mousedown';
         var PAINT_MOVE = isTouch ? 'touchmove' : 'mousemove';
         var PAINT_END = isTouch ? 'touchend' : 'mouseup';
         
+/*==========================================      
+ DEFAULT OPTIONS AND VARIABLE INITIALIZATION
+============================================*/
+
+        // Timeout for drawing video on canvas
         var timeout;
-        //set default options
+        
         var options = scope.options || {};
         options.canvasId = options.customCanvasId || 'boardCanvas';
         options.tmpCanvasId = options.customCanvasId ? (options.canvasId + 'Tmp') : 'tmpCanvas';
@@ -59,6 +76,7 @@ angular.module('snapcast.whiteboard', [])
         options.undo = options.undo || false;
         options.imageSrc = options.imageSrc || './images/dot.png';
 
+        // Loads image source into image object for background
         var loadImage = function(imageSrc) {
 
           var image = new Image();
@@ -69,12 +87,16 @@ angular.module('snapcast.whiteboard', [])
           image.src = imageSrc;
         };
 
-        // loads default image
+        // Loads default image as background
         if (options.imageSrc) {
           loadImage(options.imageSrc);
         }
 
-        //undo
+/*========================================      
+           UNDO FUNCTIONALITY
+Undo functionality - not used but can be used. To implement, simply 
+add a function on the control utilizing scope.undo.
+==========================================*/
         if (options.undo) {
           var undoCache = [];
           scope.$watch(function() {
@@ -96,7 +118,17 @@ angular.module('snapcast.whiteboard', [])
           });
         }
 
-        //create canvas and context
+/*========================================      
+       CANVAS INITIALIZATION
+Initializes Canvases and respective Contexts.
+There are three layers of canvases: 
+-The background layer, which draws images or videos underneath the other layers
+-The temporary layer, where each mark made by the user is originally drawn
+-This layer is wiped clean after every mark
+-The drawing layer, where all marks are aggregated and rendered smoothly
+-This is the layer is sent over sockets to update others 
+==========================================*/
+
         var canvas = document.createElement('canvas');
         scope.canvas = canvas;
         canvas.id = options.canvasId;
@@ -107,7 +139,7 @@ angular.module('snapcast.whiteboard', [])
         canvasBg.id = options.bgCanvasId;
         scope.canvasBg = canvasBg;
 
-
+      // Sets positions of lower layers
         angular.element(canvasTmp).css({
           position: 'absolute',
           top: 0,
@@ -120,14 +152,27 @@ angular.module('snapcast.whiteboard', [])
           'z-index': -1
         });
         
+      // Appends canvases to the page 
         elm.find('div').append(canvas);
         elm.find('div').append(canvasBg);
         elm.find('div').append(canvasTmp);
+
+      // Context creation
         var ctx = canvas.getContext('2d');
         var ctxTmp = canvasTmp.getContext('2d');
         var ctxBg = canvasBg.getContext('2d');
 
-        //init variables
+      //Sets canvas sizes
+        canvas.width = canvasBg.width = canvasTmp.width = options.width;
+        canvas.height = canvasBg.height = canvasTmp.height = options.height;
+
+      //set context styles
+        ctxTmp.globalAlpha = options.opacity;
+        ctxTmp.lineJoin = ctxTmp.lineCap = 'round';
+        ctxTmp.lineWidth = 10;
+        ctxTmp.strokeStyle = options.color;
+
+      //Init drawing coordinate variables
         var point = {
           x: 0,
           y: 0
@@ -135,17 +180,9 @@ angular.module('snapcast.whiteboard', [])
 
         var ppts = [];
 
-        //set canvas sizes
-        canvas.width = canvasBg.width = canvasTmp.width = options.width;
-        canvas.height = canvasBg.height = canvasTmp.height = options.height;
 
-        //set context styles
-        ctxTmp.globalAlpha = options.opacity;
-        ctxTmp.lineJoin = ctxTmp.lineCap = 'round';
-        ctxTmp.lineWidth = 10;
-        ctxTmp.strokeStyle = options.color;
-
-        //Watch options
+        //Watch options for angular events from controller(s)
+        // Screenshare events
         scope.$on('screenshare', function(e, data) {
           changeBackground(data);
         });
@@ -153,7 +190,8 @@ angular.module('snapcast.whiteboard', [])
         scope.$on('screenshare:removed', function(e) {
           changeBackground();
         });
-
+        
+        // Remoteshare events - created for readability, can be removed
         scope.$on('remoteshare', function(e, data) {
           changeBackground(data);
         });
@@ -162,62 +200,72 @@ angular.module('snapcast.whiteboard', [])
           changeBackground();
         });
 
-       // toggle between backgronuds
+       // Toggles between backgrounds and updates color of Snapcast logo
         scope.$on('toggleBg', function(e) {
           if (scope.imageSrc === './images/dot.png') {
             scope.imageSrc = './images/dark.jpg';
-
-            // changes h1 color
+           
             $('h1').css('color','#fff');
           } else {
-            //changes to light background if current is dark
             scope.imageSrc = './images/dot.png';
 
-            // changes h1 color 
             $('h1').css('color','#000');
           }
 
-            //loads the new image
             loadImage(scope.imageSrc);
         });
 
+/*========================================      
+        SNAPSHOT FUNCTIONALITY 
+This creates a temporary off-screen canvas, drawing each
+canvas layer in order. 
+The canvas is then converted to an image via toDataURL
+and a download function is called to download to user's downloads folder.
+Download function is under HELPER FUNCTIONS.
+==========================================*/
         scope.$on('snapshot', function(e) {
-          console.log('snap!');
-          //creates offscreen canvas ('screenshot')
           var printCanvas = document.createElement('canvas');
           var printCtx = printCanvas.getContext('2d');
 
-          // set to canvas width/height
+          // Sets canvas width/height
           printCanvas.width = canvasBg.width;
           printCanvas.height = canvasBg.height;
 
-          // recreate seamless pattern
+          // Recreates seamless pattern
           var pattern = printCtx.createPattern(canvasBg, 'repeat');
 
           printCtx.rect(0, 0, canvasBg.width, canvasBg.height);
           printCtx.fillStyle = pattern;
           printCtx.fill();
 
-          // draw the whiteboard marks over it
+          // Draws the canvas marks over it
           printCtx.drawImage(canvas, 0,0);
 
-          // creating new image for download
+          // Creates new image for download
           var img = new Image();
           img.onload=function(){
           };
 
-          // format
+          // Formats/converts to jpeg
           img.src = printCanvas.toDataURL("image/jpeg", 0.9);
 
-          // download
+          // Downloads
           download(img.src, 'untitled.jpg');
         });
 
+/*========================================      
+        CLEAR BOARD FUNCTIONALITY 
+Clears the board and sends event to make sure 
+other users' boards are also cleared.
+==========================================*/
         scope.$on('clear', function() {
            socket.emit('clear');
            clearBoard();
         });
 
+/*========================================      
+         BRUSH SETTING EVENTS
+==========================================*/
         scope.$watch('options.lineWidth', function(newValue) {
           if (typeof newValue === 'string') {
             newValue = parseInt(newValue, 10);
@@ -239,6 +287,9 @@ angular.module('snapcast.whiteboard', [])
           }
         });
 
+/*========================================      
+            LINE DRAWING
+==========================================*/
         var getOffset = function(elem) {
           var offsetTop = 0;
           var offsetLeft = 0;
@@ -255,6 +306,7 @@ angular.module('snapcast.whiteboard', [])
           };
         };
 
+        // Calculating coordinates
         var setPointFromEvent = function(point, e) {
           if (isTouch) {
             point.x = e.changedTouches[0].pageX - getOffset(e.target).left;
@@ -288,8 +340,8 @@ angular.module('snapcast.whiteboard', [])
             return;
           }
 
-          // Tmp canvas is always cleared up before drawing.
-          ctxTmp.clearRect(0, 0, canvasTmp.width, canvasTmp.height);
+          // Clears the canvas before drawing another mark.
+          clearBoard(ctxTmp, canvasTmp);
 
           ctxTmp.beginPath();
           ctxTmp.moveTo(ppts[0].x, ppts[0].y);
@@ -301,7 +353,7 @@ angular.module('snapcast.whiteboard', [])
             ctxTmp.quadraticCurveTo(ppts[i].x, ppts[i].y, c, d);
           }
 
-          // For the last 2 points
+          // Draws smooth line based on last two points
           ctxTmp.quadraticCurveTo(
             ppts[i - 1].x,
             ppts[i - 1].y,
@@ -312,6 +364,7 @@ angular.module('snapcast.whiteboard', [])
 
         };
 
+      // Copies the mark over to drawing layer
         var copyTmpImage = function() {
           if (options.undo) {
             scope.$apply(function() {
@@ -323,10 +376,11 @@ angular.module('snapcast.whiteboard', [])
           }
           canvasTmp.removeEventListener(PAINT_MOVE, paint, false);
           ctx.drawImage(canvasTmp, 0, 0);
-          ctxTmp.clearRect(0, 0, canvasTmp.width, canvasTmp.height);
+          clearBoard(ctxTmp, canvasTmp);
           ppts = [];
         };
 
+      // Copies/Renders the canvas from other users
         var copyRemoteImage = function(canvas) {
           var image = new Image();
           image.onload = function() {
@@ -335,6 +389,7 @@ angular.module('snapcast.whiteboard', [])
           image.src = canvas;
         };
 
+      // Draws in the temporary layer
         var startTmpImage = function(e) {
           e.preventDefault();
 
@@ -353,11 +408,16 @@ angular.module('snapcast.whiteboard', [])
           paint();
         };
         
+      // Wrapper for a socket event to be passed into an event listener
         var socketEvent = function() {
           var canvas = canvasTmp.toDataURL('image/png', 0.8);
           socket.emit('draw', canvas);
         };
 
+/*========================================      
+           CANVAS LISTENERS
+          For drawing events.
+==========================================*/
         var initListeners = function() {
           canvasTmp.addEventListener(PAINT_START, startTmpImage, false);
           canvasTmp.addEventListener(PAINT_END, socketEvent, false);
@@ -403,16 +463,24 @@ angular.module('snapcast.whiteboard', [])
           }
 
         };
-
-      // copies remote images received over sockets
+/*========================================      
+           CANVAS LISTENERS
+          For socket events.
+==========================================*/
+      // Copies remote images received over sockets
         socket.on('draw', copyRemoteImage);
       
-      //clears the board when someone clears it
+      //Clears the board when someone clears it
         socket.on('clear', function() {
           scope.$apply(clearBoard);
         });
 
 
+/*========================================      
+           HELPER FUNCTIONS
+          For socket events.
+==========================================*/
+// Undo function. Dials back to version needed
         var undo = function(version) {
           if (undoCache.length > 0) {
             ctx.putImageData(undoCache[version], 0, 0);
@@ -420,11 +488,13 @@ angular.module('snapcast.whiteboard', [])
           }
         };
 
+// Changes the background. Takes an img or video DOM element as a parameter 
         var changeBackground = function(newValue) {
-         //Stops the rendering of video as background if needed
+           //Stops the rendering of video as background if needed
            if (timeout) { clearTimeout(timeout); }
+           
            //Clears the background canvas
-           ctxBg.clearRect(0, 0, canvasBg.width, canvasBg.height);
+           clearBoard(ctxBg, canvasBg);
            
            //Renders according to type of element passed in
            if (newValue) {
@@ -452,26 +522,29 @@ angular.module('snapcast.whiteboard', [])
            }
 
         };
-        
-        var clearBoard = function() {
+
+// Clears the board - takes a context and its canvas
+        var clearBoard = function(ctx, canvas) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
         };
 
+// Download function that takes the canvas to download and the filename of the downloaded file
         var download = function (canvas, filename) {
 
-            /// create an "off-screen" anchor tag
+            /// Creates an "off-screen" anchor tag
             var downloadLink = document.createElement('a'),
                 e;
 
-            /// the key here is to set the download attribute of the a tag
+            // Sets download attribute of the tag
             downloadLink.download = filename;
 
-            /// convert canvas content to data-uri for link. When download
+            /* Converts canvas content to data-uri for link. When download
             /// attribute is set the content pointed to by link will be
-            /// pushed as "download" in HTML5 capable browsers
+             pushed as "download" in HTML5 capable browsers*/
+
             downloadLink.href = canvas;
 
-            /// create a "fake" click-event to trigger the download
+            /// Creates a "fake" click-event to trigger the download
             if (document.createEvent) {
 
                 e = document.createEvent("MouseEvents");
