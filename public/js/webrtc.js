@@ -1,3 +1,14 @@
+/*===================================
+======== WEB RTC DIRECTIVE =========
+====================================*/
+
+/*
+This directive attaches to a div and handles all WebRTC connections
+and non-drawing communication between sockets.
+NOTE: Some later features were implemented with jQuery selectors for
+ease and to be refactored properly into Angular.
+*/
+
 angular.module('snapcast.webrtc', [])
 .directive('kiWebrtc', function(socket) {
    return {
@@ -37,8 +48,12 @@ angular.module('snapcast.webrtc', [])
         setButton(true);
         setFaceShareButton(true);
 
-       // SCREEN SHARE FUNCTIONALITY 
-       shareButton.on('click', function () {
+/*===================================
+===== SCREEN SHARE FUNCTIONALITY ====
+====================================*/
+
+
+         shareButton.on('click', function () {
            if ( webrtc.getLocalScreen() ) {
              //stops the stream
              webrtc.stopScreenShare();
@@ -58,7 +73,11 @@ angular.module('snapcast.webrtc', [])
            }
          });
 
-       // FACE SHARE FUNCTIONALITY 
+/*===================================
+===== FACE SHARE FUNCTIONALITY ====
+====================================*/
+
+
        faceShareButton.on('click', function() {
          if (!faceSharing) {
           // gets the local video for local bg swap
@@ -79,28 +98,87 @@ angular.module('snapcast.webrtc', [])
 
        socket.on('faceshare', function(peer) {
         // select the peer according to id
-        // console.log('faceSharing:', faceSharing);
         if (faceSharing && !peer) {
           
           scope.$apply(function() {
              scope.shareDisabled = false;
           });
 
-          // console.log('disabling');
           scope.$broadcast('remoteshare:removed');
         } else {
           var video = document.getElementById(peer + '_video_incoming');
            
-          // console.log('enabling');
            scope.$apply(function() {
              scope.shareDisabled = true;
           });
           scope.$broadcast('remoteshare', video);
         }
          faceSharing = !faceSharing;
-         // console.log('changing to', faceSharing);
        });
        
+/*======================================
+===== REACTION SHARE FUNCTIONALITY =====
+The inner function needs to be refactored
+========================================*/
+       var clapButton = angular.element($('#clap'));
+       
+       // LOCAL CLAPPING
+       clapButton.on('click', function() {
+         var video = $('#localVideo');
+
+          // for position calculation
+         var rect = video[0].getBoundingClientRect();
+         var bodyRect = video.parent()[0].getBoundingClientRect();
+         var yOffset   = rect.top - bodyRect.top;
+         var xOffset   = rect.right - bodyRect.right;
+
+          // creates bubble DOM element with styling & calculated positions
+         var bubble = $('<div class="speech-container"><span class="speech-bubble"><img src="./images/db.png"></span></div>').css({
+           position: 'absolute',
+           top: 0 - yOffset*2,
+           right: bodyRect.right + bodyRect.right/3,
+           'z-index': 300
+         });
+         var id = webrtc.connection.connection.id;
+       
+         socket.emit('clap', id);
+         video.parent().prepend(bubble);
+         var remove = function() {
+           video.parent().children("div:first").remove();
+         };
+         setTimeout(remove, 3000);
+       });
+
+       // REMOTE CLAPPING
+       socket.on('clap', function(peer) {
+          var video = $('#'+ peer + '_video_incoming');
+
+          // for position calculation
+          var rect = video[0].getBoundingClientRect();
+          var bodyRect = $('#remoteVideos')[0].getBoundingClientRect();
+          var yOffset   = rect.top - bodyRect.top;
+          var xOffset   = rect.left - bodyRect.left;
+
+          // creates bubble DOM element with styling & calculated positions
+          var bubble = $('<div class="speech-container"><span class="speech-bubble"><img src="./images/db.png"></span></div>').css({
+            position: 'absolute',
+            top: 0 - yOffset*2,
+            left: xOffset + xOffset/(webrtc.getPeers().length + 1),
+            'z-index': 300
+       });
+
+          video.parent().prepend(bubble);
+          var remove = function() {
+            video.parent().children("div:first").remove();
+          };
+          setTimeout(remove, 3000);
+        });
+
+
+
+/*===================================
+=== VIDEO STREAM EVENT HANDLERS =====
+====================================*/
       // Handles local video streaming
         webrtc.on('localScreenAdded', function (video) {
           video.onclick = function () {
@@ -117,7 +195,7 @@ angular.module('snapcast.webrtc', [])
 
         // Handles addition of peer/remote videos
         webrtc.on('videoAdded', function (video, peer) {
-            //if someone is sharing their screen, change background to that video
+            // changes background to remote video screenshare
             if (peer.type === 'screen') {
              scope.$broadcast('remoteshare', video);
              // disable sharing button for others
@@ -141,7 +219,7 @@ angular.module('snapcast.webrtc', [])
             }
         });
 
-        // Handles removal of peer video
+        // Handles removal of peer videos
         webrtc.on('videoRemoved', function (video, peer) {
           //if a screenshare is being removed, change background to default
             if (peer.type === 'screen') {
@@ -155,60 +233,13 @@ angular.module('snapcast.webrtc', [])
             } else {
               var remotes = document.getElementById('remoteVideos');
               var options = (function(){return peer ? 'container_' + webrtc.getDomId(peer) : 'localScreenContainer';})();
-              var el = document.getElementById(options);          
+              var el = document.getElementById(options);       
               if (remotes && el) {
                   remotes.removeChild(el);
               }
             }
         });
-        
-        // HANDLE CLAP FUNCTIONALITY //
-        var clapButton = angular.element($('#clap'));
 
-        // LOCAL CLAPPING
-        clapButton.on('click', function() {
-          var video = $('#localVideo');
-          var rect = video[0].getBoundingClientRect();
-          var bodyRect = video.parent()[0].getBoundingClientRect();
-          var yOffset   = rect.top - bodyRect.top;
-          var xOffset   = rect.right - bodyRect.right;
-          var bubble = $('<div class="speech-container"><span class="speech-bubble"><img src="./images/clap-white.png"></span></div>').css({
-            position: 'absolute',
-            top: 0 - yOffset*2,
-            right: bodyRect.right + bodyRect.right/3,
-            'z-index': 300
-          });
-          var id = webrtc.connection.connection.id;
-      
-          socket.emit('clap', id);
-          video.parent().prepend(bubble);
-          var remove = function() {
-            video.parent().children("div:first").remove();
-          };
-          setTimeout(remove, 3000);
-        });
-
-        // REMOTE CLAPPING
-        socket.on('clap', function(peer) {
-           var video = $('#'+ peer + '_video_incoming');
-           var rect = video[0].getBoundingClientRect();
-           var bodyRect = $('#remoteVideos')[0].getBoundingClientRect();
-           var yOffset   = rect.top - bodyRect.top;
-           var xOffset   = rect.left - bodyRect.left;
-           var bubble = $('<div class="speech-container"><span class="speech-bubble"><img src="./images/clap-white.png"></span></div>').css({
-             position: 'absolute',
-             top: 0 - yOffset*2,
-             // right: rect.right,
-             left: xOffset + xOffset/(webrtc.getPeers().length + 1),
-             'z-index': 300
-        });
-
-           video.parent().prepend(bubble);
-           var remove = function() {
-             video.parent().children("div:first").remove();
-           };
-           setTimeout(remove, 3000);
-         });
 
       }
     };
